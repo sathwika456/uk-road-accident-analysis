@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3.js Visualizations</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <div id="scatterPlot"></div>
+  <div id="scatterPlot2"></div>
+  <div id="scatterPlot1"></div>
+  <div id="barChart"></div>
+  <div id="pieChart"></div>
+  <div id="lineChart"></div>
+  <div id="lineChart3"></div>
+  <div id="histogram"></div>
+  <div id="histogram1"></div>
+  <div id="stackedBarChart"></div>
+  <div id="groupedBarChart"></div>
+  <div id="donutChart"></div>
+
+</body>
+<script>
+  d3.csv("./region_traffic_by_road_type.csv").then(data => {
+    const scatterPlot1Div = d3.select("#scatterPlot1");
+    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+    const width = scatterPlot1Div.node().getBoundingClientRect().width - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
+
+    const svg = scatterPlot1Div
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand()
+        .domain(data.map(d => d.Region_name))
+        .range([0, width])
+        .padding(0.1);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => +d.total_link_length_km)])
+        .range([height, 0]);
+
+    svg.selectAll(".bar")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.Region_name))
+        .attr("width", x.bandwidth())
+        .attr("y", d => y(+d.total_link_length_km))
+        .attr("height", d => height - y(+d.total_link_length_km))
+        .attr("fill", "steelblue");
+
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("transform", "rotate(-45)");
+
+    svg.append("g")
+        .call(d3.axisLeft(y));
+
+    // Title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Total Link Length by Region");
+
+    // X-axis label
+    svg.append("text")
+        .attr("transform", `translate(${width / 2},${height + margin.top})`)
+        .style("text-anchor", "middle")
+        .text("Region");
+
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Total Link Length (km)");
+});
+
+
+
+d3.csv("./region_traffic_by_road_type.csv").then(data => {
+  const histogramDiv = d3.select("#histogram1");
+  const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+  const width = histogramDiv.node().getBoundingClientRect().width - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+
+  const svg = histogramDiv
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // Prepare data for the histogram
+  const bins = d3.histogram()
+    .value(d => +d.total_link_length_km)
+    .domain(d3.extent(data, d => +d.total_link_length_km))
+    .thresholds(10)
+    (data);
+
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(bins, d => d.length)])
+    .range([0, width]);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(bins, d => d.x1)])
+    .range([height, 0]);
+
+  // Draw bars
+  svg.selectAll("rect")
+    .data(bins)
+    .enter()
+    .append("rect")
+    .attr("x", 1)
+    .attr("transform", d => `translate(${x(d.length)}, ${y(d.x1)})`)
+    .attr("width", d => width - x(d.length))
+    .attr("height", d => y(d.x0) - y(d.x1))
+    .style("fill", "steelblue");
+
+  // Add X axis
+  svg.append("g")
+    .attr("transform", `translate(0, ${height})`)
+    .call(d3.axisBottom(x));
+
+  // Add Y axis
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // Title
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", 0 - (margin.top / 2))
+    .attr("text-anchor", "middle")
+    .style("font-size", "16px")
+    .text("Histogram of Total Link Length");
+
+  // X-axis label
+  svg.append("text")
+    .attr("transform", `translate(${width / 2},${height + margin.top})`)
+    .style("text-anchor", "middle")
+    .text("Frequency");
+
+  // Y-axis label
+  svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x", 0 - (height / 2))
+    .attr("dy", "1em")
+    .style("text-anchor", "middle")
+    .text("Total Link Length (km)");
+});
+
+
+d3.csv("./region_traffic_by_road_type.csv").then(data => {
+  const scatterPlotDiv = d3.select("#scatterPlot2");
+  const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+  const width = scatterPlotDiv.node().getBoundingClientRect().width - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+
+  const svg = scatterPlotDiv
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(data, d => +d.all_motor_vehicles)])
+    .range([0, width]);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d => +d.total_link_length_km)])
+    .range([height, 0]);
+
+  svg.selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", d => x(+d.all_motor_vehicles))
+    .attr("cy", d => y(+d.total_link_length_km))
+    .attr("r", 5)
+    .style("fill", "steelblue");
+
+  svg.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(x))
+    .append("text")
+    .attr("x", width / 2)
+    .attr("y", margin.bottom - 10)
+    .attr("fill", "#000")
+    .attr("text-anchor", "middle")
+    .text("All Motor Vehicles");
+
+  svg.append("g")
+    .call(d3.axisLeft(y))
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x", 0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("fill", "#000")
+    .attr("text-anchor", "middle")
+    .text("Total Link Length (km)");
+
+  // Title
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", 0 - (margin.top / 2))
+    .attr("text-anchor", "middle")
+    .style("font-size", "16px")
+    .text("Total Link Length vs All Motor Vehicles");
+});
+
+  // Load data from merged.csv
+d3.csv("./merged_data.csv").then(data => {
+  data.forEach(d => {
+    d.Accident_Severity = +d.Accident_Severity;
+    d.Population_Density = +d.Population_Density;
+    d.Number_of_Casualties = +d.Number_of_Casualties;
+    d.Speed_limit = +d.Speed_limit;
+    d.Accident_Date = new Date(d.Accident_Date);  // Parse date column as Date object
+  
+    // Parse other necessary columns as numbers or categories
+    d.Latitude = +d.Latitude;
+    d.Longitude = +d.Longitude;
+    d.Number_of_Vehicles = +d.Number_of_Vehicles;
+    d.NetChange = +d.NetChange;
+    d.GrowthRate = +d.GrowthRate;
+    d.WorldPercentage = +d.WorldPercentage;
+    d.Density = +d.Density;
+    d.DensityMi = +d.DensityMi;
+    d.Pop1980 = +d.Pop1980;
+    d.Pop2000 = +d.Pop2000;
+    d.Pop2010 = +d.Pop2010;
+    d.Pop2022 = +d.Pop2022;
+    d.Pop2023 = +d.Pop2023;
+    d.Pop2030 = +d.Pop2030;
+    d.Pop2050 = +d.Pop2050;
+  });
+  
+
+  // 2. Accident Severity by Day of the Week (bar chart)
+  const barChart = d3.select("#barChart");
+  const margin2 = { top: 20, right: 30, bottom: 40, left: 50 };
+  const width2 = 400 - margin2.left - margin2.right;
+  const height2 = 300 - margin2.top - margin2.bottom;
+
+  const svg2 = barChart
+    .append("svg")
+    .attr("width", width2 + margin2.left + margin2.right)
+    .attr("height", height2 + margin2.top + margin2.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin2.left},${margin2.top})`);
+
+  // Add title
+  svg2.append("text")
+    .attr("x", width2 / 2)
+    .attr("y", -margin2.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity by Day of the Week");
+
+  // Add x-axis label
+  svg2.append("text")
+    .attr("x", width2 / 2)
+    .attr("y", height2 + margin2.bottom / 2)
+    .attr("text-anchor", "middle")
+    .text("Day of the Week");
+
+  // Add y-axis label
+  svg2.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height2 / 2)
+    .attr("y", -margin2.left / 1.5)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity");
+
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayOfWeekCounts = d3.rollup(data, v => v.length, d => d.Day_of_Week);
+
+  const xScale2 = d3.scaleBand()
+    .domain(daysOfWeek)
+    .range([0, width2])
+    .padding(0.1);
+
+  const yScale2 = d3.scaleLinear()
+    .domain([0, d3.max(dayOfWeekCounts.values())])
+    .nice()
+    .range([height2, 0]);
+
+  svg2.selectAll(".bar")
+    .data(dayOfWeekCounts)
+    .enter()
+    .append("rect")
+    .attr("class", "bar")
+    .attr("x", d => xScale2(d[0]))
+    .attr("y", d => yScale2(d[1]))
+    .attr("width", xScale2.bandwidth())
+    .attr("height", d => height2 - yScale2(d[1]))
+    .attr("fill", "orange");
+
+  svg2.append("g")
+    .attr("transform", `translate(0,${height2})`)
+    .call(d3.axisBottom(xScale2));
+
+  svg2.append("g")
+    .call(d3.axisLeft(yScale2));
+
+  // 3. Accident Severity Distribution by Weather Conditions (pie chart)
+  const pieChart = d3.select("#pieChart");
+  const margin3 = { top: 20, right: 30, bottom: 40, left: 50 };
+  const width3 = 400 - margin3.left - margin3.right;
+  const height3 = 300 - margin3.top - margin3.bottom;
+
+  const svg3 = pieChart
+    .append("svg")
+    .attr("width", width3 + margin3.left + margin3.right)
+    .attr("height", height3 + margin3.top + margin3.bottom)
+    .append("g")
+    .attr("transform", `translate(${width3 / 2},${height3 / 2})`);
+
+  // Add title
+  svg3.append("text")
+    .attr("x", 0)
+    .attr("y", -height3 / 2 - margin3.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity Distribution by Weather Conditions");
+
+  const weatherGroups = d3.group(data, d => d.Weather_Conditions);
+  const pieData = Array.from(weatherGroups, ([key, value]) => ({ weather: key, count: value.length }));
+
+  const radius = Math.min(width3, height3) / 2;
+  const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+  const arc = d3.arc()
+    .innerRadius(0)
+    .outerRadius(radius);
+
+  const pie = d3.pie()
+    .value(d => d.count);
+
+  const arcs = svg3.selectAll(".arc")
+    .data(pie(pieData))
+    .enter()
+    .append("g")
+    .attr("class", "arc");
+
+  arcs.append("path")
+    .attr("d", arc)
+    .attr("fill", d => colorScale(d.data.weather));
+
+  // Add legend
+  const legend = svg3.selectAll(".legend")
+    .data(pieData)
+    .enter()
+    .append("g")
+    .attr("class", "legend")
+    .attr("transform", (d, i) => `translate(-100,${i * 20 - 50})`);
+
+  legend.append("rect")
+    .attr("x", width3 / 2 + 20)
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("fill", d => colorScale(d.weather));
+
+  legend.append("text")
+    .attr("x", width3 / 2 + 40)
+    .attr("y", 5)
+    .attr("dy", "0.35em")
+    .text(d => d.weather);
+
+   
+    // 5. Histogram for Number of Casualties
+  const histogram = d3.select("#histogram");
+  const margin5 = { top: 20, right: 30, bottom: 40, left: 50 };
+  const width5 = 600 - margin5.left - margin5.right;
+  const height5 = 400 - margin5.top - margin5.bottom;
+
+  const svg5 = histogram
+    .append("svg")
+    .attr("width", width5 + margin5.left + margin5.right)
+    .attr("height", height5 + margin5.top + margin5.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin5.left},${margin5.top})`);
+
+  // Add title
+  svg5.append("text")
+    .attr("x", width5 / 2)
+    .attr("y", -margin5.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Histogram of Number of Casualties");
+
+  // Add x-axis label
+  svg5.append("text")
+    .attr("x", width5 / 2)
+    .attr("y", height5 + margin5.bottom / 2)
+    .attr("text-anchor", "middle")
+    .text("Number of Casualties");
+
+  // Add y-axis label
+  svg5.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height5 / 2)
+    .attr("y", -margin5.left / 1.5)
+    .attr("text-anchor", "middle")
+    .text("Frequency");
+
+  const xScale5 = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d.Number_of_Casualties)])
+    .nice()
+    .range([0, width5]);
+
+  const binsGenerator = d3.bin()
+    .domain(xScale5.domain())
+    .thresholds(xScale5.ticks(20));
+
+  const bins = binsGenerator(data.map(d => d.Number_of_Casualties));
+
+  const yScale5 = d3.scaleLinear()
+    .domain([0, d3.max(bins, d => d.length)])
+    .nice()
+    .range([height5, 0]);
+
+  svg5.selectAll("rect")
+    .data(bins)
+    .enter()
+    .append("rect")
+    .attr("x", d => xScale5(d.x0))
+    .attr("y", d => yScale5(d.length))
+    .attr("width", d => xScale5(d.x1) - xScale5(d.x0) - 1)
+    .attr("height", d => height5 - yScale5(d.length))
+    .attr("fill", "steelblue");
+
+  // Add axes
+  svg5.append("g")
+    .attr("transform", `translate(0,${height5})`)
+    .call(d3.axisBottom(xScale5));
+
+  svg5.append("g")
+    .call(d3.axisLeft(yScale5));
+
+
+    // 6. Stacked Bar Chart for Accident Severity by Weather Conditions
+  const stackedBarChart = d3.select("#stackedBarChart");
+  const margin6 = { top: 20, right: 30, bottom: 40, left: 50 };
+  const width6 = 600 - margin6.left - margin6.right;
+  const height6 = 400 - margin6.top - margin6.bottom;
+
+  const svg6 = stackedBarChart
+    .append("svg")
+    .attr("width", width6 + margin6.left + margin6.right)
+    .attr("height", height6 + margin6.top + margin6.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin6.left},${margin6.top})`);
+
+  // Add title
+  svg6.append("text")
+    .attr("x", width6 / 2)
+    .attr("y", -margin6.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity by Weather Conditions");
+
+  // Add x-axis label
+  svg6.append("text")
+    .attr("x", width6 / 2)
+    .attr("y", height6 + margin6.bottom / 2)
+    .attr("text-anchor", "middle")
+    .text("Weather Conditions");
+
+  // Add y-axis label
+  svg6.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height6 / 2)
+    .attr("y", -margin6.left / 1.5)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity");
+
+  const weatherSeverityData = d3.rollups(data, v => d3.sum(v, d => d.Accident_Severity), d => d.Weather_Conditions);
+
+  const xScale6 = d3.scaleBand()
+    .domain(weatherSeverityData.map(d => d[0]))
+    .range([0, width6])
+    .padding(0.1);
+
+  const yScale6 = d3.scaleLinear()
+    .domain([0, d3.max(weatherSeverityData, d => d[1])])
+    .nice()
+    .range([height6, 0]);
+
+  const colorScale6 = d3.scaleOrdinal(d3.schemeCategory10);
+
+  svg6.selectAll(".bar")
+    .data(weatherSeverityData)
+    .enter()
+    .append("rect")
+    .attr("class", "bar")
+    .attr("x", d => xScale6(d[0]))
+    .attr("y", d => yScale6(d[1]))
+    .attr("width", xScale6.bandwidth())
+    .attr("height", d => height6 - yScale6(d[1]))
+    .attr("fill", d => colorScale6(d[0]));
+
+  // Add axes
+  svg6.append("g")
+    .attr("transform", `translate(0,${height6})`)
+    .call(d3.axisBottom(xScale6))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)")
+    .attr("x", -10)
+    .attr("y", 0)
+    .style("text-anchor", "end");
+
+  svg6.append("g")
+    .call(d3.axisLeft(yScale6));
+
+  // 7. Grouped Bar Chart for Accident Severity by Day of the Week and Speed Limit
+  const groupedBarChart = d3.select("#groupedBarChart");
+  const margin7 = { top: 20, right: 30, bottom: 40, left: 50 };
+  const width7 = 600 - margin7.left - margin7.right;
+  const height7 = 400 - margin7.top - margin7.bottom;
+
+  const svg7 = groupedBarChart
+    .append("svg")
+    .attr("width", width7 + margin7.left + margin7.right)
+    .attr("height", height7 + margin7.top + margin7.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin7.left},${margin7.top})`);
+
+  // Add title
+  svg7.append("text")
+    .attr("x", width7 / 2)
+    .attr("y", -margin7.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity by Day of the Week and Speed Limit");
+
+  // Add x-axis label
+  svg7.append("text")
+    .attr("x", width7 / 2)
+    .attr("y", height7 + margin7.bottom / 2)
+    .attr("text-anchor", "middle")
+    .text("Day of the Week and Speed Limit");
+
+  // Add y-axis label
+  svg7.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height7 / 2)
+    .attr("y", -margin7.left / 1.5)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity");
+
+  const daySpeedSeverityData = d3.rollups(data, v => d3.sum(v, d => d.Accident_Severity), d => d.Day_of_Week, d => d.Speed_limit);
+
+  const xScale7 = d3.scaleBand()
+    .domain(daySpeedSeverityData.map(d => d[0]))
+    .range([0, width7])
+    .padding(0.1);
+
+  const subgroups = [...new Set(data.map(d => d.Speed_limit))];
+  const colorScale7 = d3.scaleOrdinal()
+    .domain(subgroups)
+    .range(d3.schemeCategory10);
+
+  const xSubgroupScale7 = d3.scaleBand()
+    .domain(subgroups)
+    .range([0, xScale7.bandwidth()])
+    .padding(0.05);
+
+  const yScale7 = d3.scaleLinear()
+    .domain([0, d3.max(daySpeedSeverityData, d => d3.max(d[1], d => d[1]))])
+    .nice()
+    .range([height7, 0]);
+
+  svg7.append("g")
+    .selectAll("g")
+    .data(daySpeedSeverityData)
+    .join("g")
+    .attr("transform", d => `translate(${xScale7(d[0])},0)`)
+    .selectAll("rect")
+    .data(d => d[1])
+    .join("rect")
+    .attr("x", d => xSubgroupScale7(d[0]))
+    .attr("y", d => yScale7(d[1]))
+    .attr("width", xSubgroupScale7.bandwidth())
+    .attr("height", d => height7 - yScale7(d[1]))
+    .attr("fill", d => colorScale7(d[0]));
+
+  // Add legend
+  const legend7 = svg7.append("g")
+    .attr("transform", `translate(${width7 - 10},${margin7.top})`)
+    .attr("text-anchor", "end")
+    .style("font-size", "12px")
+    .selectAll("g")
+    .data(subgroups)
+    .join("g")
+    .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+  legend7.append("rect")
+    .attr("x", -19)
+    .attr("width", 19)
+    .attr("height", 19)
+    .attr("fill", colorScale7);
+
+  legend7.append("text")
+    .attr("x", -24)
+    .attr("y", 9.5)
+    .attr("dy", "0.35em")
+    .text(d => d);
+
+  // Add axes
+  svg7.append("g")
+    .attr("transform", `translate(0,${height7})`)
+    .call(d3.axisBottom(xScale7).tickSizeOuter(0));
+
+  svg7.append("g")
+    .call(d3.axisLeft(yScale7));
+
+
+      // 8. Donut Chart for Accident Severity Distribution by Speed Limit
+  const donutChart = d3.select("#donutChart");
+  const radius8 = Math.min(width7, height7) / 2;
+
+  const svg8 = donutChart
+    .append("svg")
+    .attr("width", width7 + margin7.left + margin7.right)
+    .attr("height", height7 + margin7.top + margin7.bottom)
+    .append("g")
+    .attr("transform", `translate(${width7 / 2},${height7 / 2})`);
+
+  // Add title
+  svg8.append("text")
+    .attr("x", 0)
+    .attr("y", -height7 / 2 - margin7.top / 2)
+    .attr("text-anchor", "middle")
+    .text("Accident Severity Distribution by Speed Limit");
+
+  const speedSeverityData = d3.rollups(data, v => d3.sum(v, d => d.Accident_Severity), d => d.Speed_limit);
+
+  const pie8 = d3.pie()
+    .value(d => d[1])
+    .sort(null);
+
+  const arc8 = d3.arc()
+    .innerRadius(radius8 * 0.5)
+    .outerRadius(radius8 * 0.8);
+
+  const arcs8 = svg8.selectAll("arc")
+    .data(pie8(speedSeverityData))
+    .enter()
+    .append("g")
+    .attr("class", "arc");
+
+  arcs8.append("path")
+    .attr("d", arc8)
+    .attr("fill", (d, i) => colorScale7(i));
+
+  // Add legend
+  const legend8 = svg8.append("g")
+    .attr("transform", `translate(${width7 - 10},${margin7.top})`)
+    .attr("text-anchor", "end")
+    .style("font-size", "12px")
+    .selectAll("g")
+    .data(speedSeverityData)
+    .join("g")
+    .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+  legend8.append("rect")
+    .attr("x", -19)
+    .attr("width", 19)
+    .attr("height", 19)
+    .attr("fill", (d, i) => colorScale7(i));
+
+  legend8.append("text")
+    .attr("x", -24)
+    .attr("y", 9.5)
+    .attr("dy", "0.35em")
+    .text(d => d[0]);
+
+
+}).catch(error => {
+  console.log("Error loading the data:", error);
+});
+
+</script>
+</html>
